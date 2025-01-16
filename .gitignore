@@ -2,3 +2,4 @@ venv
 cleaned_and_enriched_covid19_data.csv
 .idea
 .DS_Store
+.env
