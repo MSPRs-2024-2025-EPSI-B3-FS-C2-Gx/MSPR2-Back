@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 16,
+  "id": 47,
   "links": [],
   "panels": [
     {
@@ -47,8 +47,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
-        "w": 10,
+        "h": 6,
+        "w": 12,
         "x": 0,
         "y": 0
       },
@@ -60,7 +60,7 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "sum"
           ],
           "fields": "",
           "values": false
@@ -78,34 +78,17 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT SUM(total_confirmed) AS total_cases\nFROM (\n    SELECT DISTINCT ON (country) country, total_confirmed\n    FROM covid19_data\n    WHERE date <= NOW()\n    ORDER BY country, date DESC\n) AS latest;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "SELECT SUM(total_cumulative_cases) AS total_covid_cases FROM covid_vaccination_summary;",
+          "refId": "A"
         }
       ],
-      "title": "Total des Cas Confirmés",
+      "title": "Total des Cas COVID-19 Cumulés",
       "type": "stat"
     },
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "aea68ff97sk5cf"
+        "uid": "${DS_POSTGRES}"
       },
       "fieldConfig": {
         "defaults": {
@@ -113,10 +96,24 @@
             "mode": "thresholds"
           },
           "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
           "mappings": [],
@@ -137,119 +134,52 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 10,
-        "w": 14,
-        "x": 10,
+        "h": 8,
+        "w": 12,
+        "x": 12,
         "y": 0
       },
-      "id": 5,
+      "id": 2,
       "options": {
-        "basemap": {
-          "config": {},
-          "name": "Layer 0",
-          "type": "default"
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "controls": {
-          "mouseWheelZoom": true,
-          "showAttribution": true,
-          "showDebug": false,
-          "showMeasure": false,
-          "showScale": false,
-          "showZoom": true
-        },
-        "layers": [
-          {
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": {
-                  "fixed": "dark-green"
-                },
-                "opacity": 0.4,
-                "rotation": {
-                  "fixed": 0,
-                  "max": 360,
-                  "min": -360,
-                  "mode": "mod"
-                },
-                "size": {
-                  "fixed": 5,
-                  "max": 15,
-                  "min": 2
-                },
-                "symbol": {
-                  "fixed": "img/icons/marker/circle.svg",
-                  "mode": "fixed"
-                },
-                "symbolAlign": {
-                  "horizontal": "center",
-                  "vertical": "center"
-                },
-                "textConfig": {
-                  "fontSize": 12,
-                  "offsetX": 0,
-                  "offsetY": 0,
-                  "textAlign": "center",
-                  "textBaseline": "middle"
-                }
-              }
-            },
-            "location": {
-              "mode": "lookup"
-            },
-            "name": "Nombre de cas",
-            "tooltip": true,
-            "type": "markers"
-          }
-        ],
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
         "tooltip": {
-          "mode": "details"
+          "mode": "single",
+          "sort": "none"
         },
-        "view": {
-          "allLayers": true,
-          "id": "zero",
-          "lat": 0,
-          "lon": 0,
-          "zoom": 1
-        }
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
       },
       "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "aea68ff97sk5cf"
+            "uid": "${DS_POSTGRES}"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n    country AS location,\n    MAX(total_confirmed) AS value\nFROM\n    covid19_data\nGROUP BY\n    country;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "SELECT \"Country\", avg_new_cases FROM covid_vaccination_summary ORDER BY avg_new_cases DESC LIMIT 10;",
+          "refId": "B"
         }
       ],
-      "title": "Panel Title",
-      "type": "geomap"
+      "title": "Top 10 Pays par Nouveaux Cas Moyens",
+      "type": "barchart"
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
+        "type": "postgres",
         "uid": "${DS_POSTGRES}"
       },
       "fieldConfig": {
@@ -302,18 +232,17 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 6
       },
-      "id": 2,
+      "id": 5,
       "options": {
         "legend": {
           "calcs": [],
@@ -328,118 +257,17 @@
       },
       "targets": [
         {
-          "datasource": {
-            "uid": "${DS_POSTGRES}"
-          },
-          "editorMode": "code",
           "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT \n    date::timestamp AS time,\n    SUM(daily_new_cases) AS new_cases,\n    SUM(daily_new_deaths) AS new_deaths\nFROM (\n    SELECT DISTINCT ON (country, date)\n        country,\n        date,\n        daily_new_cases,\n        daily_new_deaths\n    FROM covid19_data\n    ORDER BY country, date DESC\n) AS latest_data\nGROUP BY time\nORDER BY time;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "\n        SELECT \"Year_Date\" AS time, \n               SUM(\"total_new_cases\") AS \"Cases per Million\", \n               SUM(\"total_new_deaths\") AS \"Deaths per Million\"\n        FROM covid_region_yearly_summary\n        GROUP BY \"Year_Date\"\n        ORDER BY \"Year_Date\";\n    ",
+          "refId": "A"
         }
       ],
-      "title": "Évolution des Cas et Décès dans le Temps",
+      "title": "Global Cases and Deaths per Million (2020-2024)",
       "type": "timeseries"
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRES}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 12,
-        "y": 10
-      },
-      "id": 3,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "uid": "${DS_POSTGRES}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n    continent,\n    AVG(latest_data.summary_mortality_rate) AS mortality,\n    AVG(latest_data.summary_recovery_rate) AS recovery\nFROM (\n    SELECT DISTINCT ON (country) \n        country, \n        continent, \n        summary_mortality_rate, \n        summary_recovery_rate, \n        date\n    FROM covid19_data\n    ORDER BY country, date DESC\n) AS latest_data\nGROUP BY continent;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Répartition Mortalité et Récupération par Continent",
-      "type": "piechart"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
+        "type": "postgres",
         "uid": "${DS_POSTGRES}"
       },
       "fieldConfig": {
@@ -486,12 +314,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 16
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
       },
-      "id": 4,
+      "id": 6,
       "options": {
         "barRadius": 0,
         "barWidth": 0.97,
@@ -515,42 +343,195 @@
       },
       "targets": [
         {
-          "datasource": {
-            "uid": "${DS_POSTGRES}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n    country, \n    MAX(total_confirmed) AS confirmed\nFROM \n    covid19_data\nGROUP BY \n    country\nORDER BY \n    confirmed DESC\nLIMIT 10;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "format": "time_series",
+          "rawSql": "\n        SELECT \"Year_Date\" AS time, \n               (SUM(\"total_new_deaths\")::float / NULLIF(SUM(\"total_new_cases\"), 0)) * 100 AS \"Case Fatality Ratio (%)\"\n        FROM covid_region_yearly_summary\n        GROUP BY \"Year_Date\"\n        ORDER BY \"Year_Date\";\n    ",
+          "refId": "B"
         }
       ],
-      "title": "Top 10 Pays par Cas Confirmés",
+      "title": "Global Case-Fatality Ratio (CFR) by Year (2020-2024)",
       "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "\n        SELECT \"Year_Date\" AS time, \n               \"WHO_region\", \n               SUM(\"total_new_cases\") AS \"Cases per Million\"\n        FROM covid_region_yearly_summary\n        GROUP BY \"Year_Date\", \"WHO_region\"\n        ORDER BY \"Year_Date\", \"WHO_region\";\n    ",
+          "refId": "C"
+        }
+      ],
+      "title": "Cases per Million by Region (2020-2024)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "\n        SELECT \"Year_Date\" AS time, \n               \"WHO_region\", \n               SUM(\"total_new_deaths\") AS \"Deaths per Million\"\n        FROM covid_region_yearly_summary\n        GROUP BY \"Year_Date\", \"WHO_region\"\n        ORDER BY \"Year_Date\", \"WHO_region\";\n    ",
+          "refId": "D"
+        }
+      ],
+      "title": "Deaths per Million by Region (2020-2024)",
+      "type": "timeseries"
     }
   ],
-  "refresh": "",
   "schemaVersion": 39,
   "tags": [
     "covid19",
-    "global"
+    "dashboard"
   ],
   "templating": {
     "list": [
@@ -570,19 +551,18 @@
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "type": "datasource",
-        "typeName": "PostgreSQL"
+        "type": "datasource"
       }
     ]
   },
   "time": {
-    "from": "2020-01-22T00:00:00.000Z",
-    "to": "2022-05-14T00:00:00.000Z"
+    "from": "now-30d",
+    "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "COVID-19 Global Dashboard",
-  "uid": "eea68xw0vhh4wf",
-  "version": 13,
+  "title": "COVID-19 Global Dashboard - Fusionné",
+  "uid": "eea9dpumikkqoedqd",
+  "version": 1,
   "weekStart": ""
 }
