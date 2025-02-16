@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, when
+from pyspark.sql.functions import col, when, monotonically_increasing_id
 from dotenv import load_dotenv
 import os
 
@@ -68,6 +68,14 @@ summary_data_cleaned = summary_data_cleaned.withColumn(
 
 # Étape 3: Joindre les données journalières et résumées
 enriched_data = daily_data_cleaned.join(summary_data_cleaned, on="country", how="inner")
+
+# Ajout de la colonne id auto-générée
+enriched_data = enriched_data.withColumn("id", monotonically_increasing_id())
+
+# Réorganiser les colonnes pour placer "id" en première position
+cols = enriched_data.columns
+ordered_cols = ["id"] + [c for c in cols if c != "id"]
+enriched_data = enriched_data.select(*ordered_cols)
 
 # Étape 4: Connexion PostgreSQL via JDBC
 postgres_url = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
