@@ -2,8 +2,10 @@ from flask import Flask, request, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 import os
 from datetime import datetime
+from flasgger import Swagger
 
 app = Flask(__name__)
+swagger = Swagger(app)
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
@@ -72,9 +74,34 @@ class CovidData(db.Model):
             return {k: v for k, v in data.items() if k in fields or k == 'id'}
         return data
 
-
+   
 @app.route('/coviddata', methods=['GET'])
 def get_covid_data():
+    """
+    Un endpoint qui renvoie l'ensemble des données et permet de filtrer les colonnes retournées.
+    ---
+    parameters:
+      - name: fields
+        in: query
+        description: "Liste séparée par des virgules indiquant les champs à inclure dans la réponse (ex : id,continent,country,date). Si non fourni, tous les champs sont retournés."
+        required: false
+        schema:
+          type: string
+    responses:
+      200:
+        description: "Succès : retourne un tableau d'objets COVIDData."
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+              example:
+                - id: 170236
+                  date: "2021-03-11T00:00:00"
+                  country: "Laos"
+                  continent: "Asia"
+    """
     fields_param = request.args.get('fields')
     fields = fields_param.split(',') if fields_param else None
 
@@ -84,11 +111,79 @@ def get_covid_data():
 
 @app.route('/coviddata/<int:id>', methods=['GET'])
 def get_covid_data_item(id):
+    """
+    Un endpoint qui renvoie l'ensemble des données de l'id ciblé.
+    ---
+    parameters:
+      - name: id
+        in: path
+        description: "id ciblé ex:1."
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: "Succès : retourne l'object."
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+              example:
+                - id: 1
+                  date: "2020-03-15T00:00:00"
+                  country: "Afghanistan"
+                  continent: "Asia"
+    """
     record = CovidData.query.get_or_404(id)
     return jsonify(record.to_dict()), 200
 
 @app.route('/coviddata', methods=['POST'])
 def add_covid_data():
+    """
+    Un endpoint qui permet d'ajouté une donnée.
+    ---
+    parameters:
+      - name: body
+        in: body
+        required: true
+        description: "La nouvelle donnée à ajouter."
+        schema:
+          type: object
+          required:
+            - country
+            - date
+          properties:
+            country:
+              type: string
+              example: "Afghanistan"
+            date:
+              type: string
+              format: date-time
+              example: "2020-03-15T00:00:00"
+            cumulative_total_cases:
+              type: number
+              example: 100
+            daily_new_cases:
+              type: number
+              example: 5
+    responses:
+      201:
+        description: "La donnée à bien été ajouté"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                id:
+                  type: integer
+              example:
+                message: "Donnée ajoutée avec succès"
+                id: 1
+    """
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Aucune donnée fournie'}), 400
@@ -131,6 +226,105 @@ def add_covid_data():
 
 @app.route('/coviddata/<int:id>', methods=['PUT'])
 def update_covid_data(id):
+    """
+    Un endpoint qui permet de mettre à jour une donnée existante.
+    ---
+    parameters:
+      - name: id
+        in: path
+        description: "Identifiant unique de la donnée à mettre à jour."
+        required: true
+        schema:
+          type: integer
+      - name: body
+        in: body
+        required: true
+        description: "Il n'est pas obligatoire de mettre l'ensemble des informations pour le modifier"
+        schema:
+          type: object
+          properties:
+            country:
+              type: string
+              example: "Afghanistan"
+            date:
+              type: string
+              format: date-time
+              example: "2020-03-15T00:00:00"
+            cumulative_total_cases:
+              type: number
+              example: 100
+            daily_new_cases:
+              type: number
+              example: 5
+            daily_active_cases:
+              type: number
+              example: 50
+            cumulative_total_deaths:
+              type: number
+              example: 10
+            daily_new_deaths:
+              type: number
+              example: 1
+            daily_mortality_rate:
+              type: number
+              example: 0.05
+            daily_recovery_rate:
+              type: number
+              example: 0.10
+            continent:
+              type: string
+              example: "Asia"
+            total_confirmed:
+              type: integer
+              example: 1500
+            total_deaths:
+              type: number
+              example: 50
+            total_recovered:
+              type: number
+              example: 1000
+            summary_active_cases:
+              type: number
+              example: 450
+            serious_or_critical:
+              type: number
+              example: 20
+            total_cases_per_1m_population:
+              type: number
+              example: 120.5
+            total_deaths_per_1m_population:
+              type: number
+              example: 3.4
+            total_tests:
+              type: number
+              example: 50000
+            total_tests_per_1m_population:
+              type: number
+              example: 350.2
+            population:
+              type: integer
+              example: 1000000
+            summary_mortality_rate:
+              type: number
+              example: 0.03
+            summary_recovery_rate:
+              type: number
+              example: 0.85
+    responses:
+      200:
+        description: "Succès : la donnée a été mise à jour avec succès."
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+              example:
+                message: "Donnée mise à jour avec succès"
+      400:
+        description: "Erreur : Aucune donnée fournie ou format invalide pour certains champs."
+    """
     record = CovidData.query.get_or_404(id)
     data = request.get_json()
 
@@ -152,6 +346,31 @@ def update_covid_data(id):
 
 @app.route('/coviddata/<int:id>', methods=['DELETE'])
 def delete_covid_data(id):
+    """
+    Un endpoint qui permet de supprimer une donnée existante.
+    ---
+    parameters:
+      - name: id
+        in: path
+        description: "Id de la donnée à supprimer"
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: "Donnée bien supprimé"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+              example:
+                message: "Donnée supprimée avec succès"
+      404:
+        description: "Erreur : donnée non trouvée."
+    """
     record = CovidData.query.get_or_404(id)
     db.session.delete(record)
     db.session.commit()
