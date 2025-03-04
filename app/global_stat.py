@@ -111,7 +111,7 @@ covid_combined_summary = covid_summary.join(
 )
 
 # Jointure entre les données de vaccination et les données COVID-19 fusionnées
-# On retire la colonne total_cumulative_cases ici pour ne pas l'inclure dans global_statistics
+# Ici, nous conservons également la colonne total_cumulative_cases dans global_statistics
 combined_data = vaccination_summary.join(
     covid_combined_summary,
     vaccination_summary.COUNTRY == covid_combined_summary.Country,
@@ -121,7 +121,8 @@ combined_data = vaccination_summary.join(
     "total_cumulative_people_vaccinated",
     "total_cumulative_people_fully_vaccinated",
     "avg_new_cases",
-    "avg_new_deaths"
+    "avg_new_deaths",
+    "total_cumulative_cases"
 )
 
 # ✅ Insertion des données fusionnées dans la table "global_statistics"
