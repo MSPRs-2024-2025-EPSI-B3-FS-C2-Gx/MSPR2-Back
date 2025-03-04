@@ -21,12 +21,13 @@
      - **total_cumulative_cases** :  La somme des cas cumulés (selon les enregistrements disponibles) durant l'année.
      - **total_cumulative_deaths** : La somme des décès cumulés durant l'année.
      - **CFR**: Le taux de létalité (Case Fatality Rate), calculé en pourcentage comme suit : \text{CFR} = \left(\frac{\text{total_cumulative_deaths}}{\text{total_cumulative_cases}}\right) \times 100
+    - **Year_ts**: L'annee en timestamp
 
 
-
-4**Table "covid_region_yearly_summary"**
+4. **Table "covid_region_yearly_summary"**
    - **Contenu** : Cette table présente des agrégations des données COVID-19 par région de l'OMS (WHO_region) et par année.
      - **WHO_region** : La région de l'Organisation mondiale de la santé à laquelle appartiennent les enregistrements.
      - **Year** : L'année d'enregistrement.
      - **total_new_cases** : La somme des nouveaux cas signalés durant l'année pour la région.
      - **total_new_deaths** :  La somme des nouveaux décès enregistrés durant l'année pour la région.
+    - **Year_ts**: L'annee en timestamp

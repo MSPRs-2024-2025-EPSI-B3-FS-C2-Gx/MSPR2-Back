@@ -1,6 +1,6 @@
 # Importation des bibliothèques nécessaires
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date, year, sum as spark_sum, avg, when
+from pyspark.sql.functions import col, to_date, year, concat, lit, to_timestamp, sum as spark_sum, avg, when
 from pyspark.sql.types import DoubleType
 from dotenv import load_dotenv
 import os
@@ -55,6 +55,12 @@ covid_global_yearly = covid_data.withColumn("Year", year(col("Date_reported"))) 
         spark_sum("Cumulative_deaths").alias("total_cumulative_deaths")
     )
 
+# Conversion de l'année en timestamp (1er janvier de l'année correspondante) pour les agrégats globaux
+covid_global_yearly = covid_global_yearly.withColumn(
+    "Year_ts",
+    to_timestamp(concat(col("Year").cast("string"), lit("-01-01")), "yyyy-MM-dd")
+)
+
 # Calcul du taux de létalité global (CFR) par année
 covid_global_yearly = covid_global_yearly.withColumn(
     "CFR",
@@ -69,6 +75,12 @@ covid_region_yearly = covid_data.withColumn("Year", year(col("Date_reported"))) 
         spark_sum("New_cases").alias("total_new_cases"),
         spark_sum("New_deaths").alias("total_new_deaths")
     )
+
+# Conversion de l'année en timestamp (1er janvier) pour les agrégats régionaux
+covid_region_yearly = covid_region_yearly.withColumn(
+    "Year_ts",
+    to_timestamp(concat(col("Year").cast("string"), lit("-01-01")), "yyyy-MM-dd")
+)
 
 # Configuration de la connexion JDBC pour PostgreSQL
 postgres_url = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
