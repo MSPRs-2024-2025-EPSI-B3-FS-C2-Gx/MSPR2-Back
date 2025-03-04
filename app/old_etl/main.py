@@ -30,8 +30,8 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Définition des chemins vers les fichiers CSV contenant les données journalières et résumées
-daily_data_path = "data/worldometer_coronavirus_daily_data.csv"
-summary_data_path = "data/worldometer_coronavirus_summary_data.csv"
+daily_data_path = "../data/worldometer_coronavirus_daily_data.csv"
+summary_data_path = "../data/worldometer_coronavirus_summary_data.csv"
 
 # Chargement des fichiers CSV
 daily_data = spark.read.csv(daily_data_path, header=True, inferSchema=True)
