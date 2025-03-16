@@ -1,0 +1,26 @@
+@startuml
+' Définition de la table country_statistics
+entity "country_statistics" as cs {
+  * Country : VARCHAR(255)
+  --
+  total_cases : INT
+  total_vaccinated : INT
+}
+
+' Définition de la table global_total_case
+entity "global_total_case" as gtc {
+  * Year : INT
+  --
+  total_case : INT
+}
+
+' Définition de la table region_yearly_summary
+entity "region_yearly_summary" as rys {
+  * WHO_region : VARCHAR(50)
+  * Year : INT
+  --
+  total_cases : INT
+  total_deaths : INT
+}
+
+@enduml
