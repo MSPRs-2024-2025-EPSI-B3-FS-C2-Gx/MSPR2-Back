@@ -7,13 +7,6 @@ entity "country_statistics" as cs {
   total_vaccinated : INT
 }
 
-' Définition de la table global_total_case
-entity "global_total_case" as gtc {
-  * Year : INT
-  --
-  total_case : INT
-}
-
 ' Définition de la table region_yearly_summary
 entity "region_yearly_summary" as rys {
   * WHO_region : VARCHAR(50)

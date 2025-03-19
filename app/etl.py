@@ -25,7 +25,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 ##########################################
-# ETL pour global_total_case et region_yearly_summary (ETL2)
+# ETL region_yearly_summary (ETL1)
 ##########################################
 
 # Extraction des données à partir du fichier CSV
@@ -59,16 +59,6 @@ latest_per_country_year = covid_data.withColumn("rn", row_number().over(window_s
                                       .filter(col("rn") == 1) \
                                       .drop("rn")
 
-# Agrégation globale par année : somme des dernières valeurs par pays
-global_total_case = latest_per_country_year.groupBy("Year") \
-    .agg(spark_sum("Cumulative_cases").alias("total_cumulative_cases"))
-
-# Conversion de l'année en timestamp (1er janvier de l'année correspondante)
-global_total_case = global_total_case.withColumn(
-    "Year_ts",
-    to_timestamp(concat(col("Year").cast("string"), lit("-01-01")), "yyyy-MM-dd")
-)
-
 # Pour region_yearly_summary, nous pouvons aussi utiliser latest_per_country_year pour obtenir, par région et année,
 # la somme des dernières valeurs de Cumulative_cases et Cumulative_deaths par pays.
 region_yearly_summary = latest_per_country_year.groupBy("WHO_region", "Year") \
@@ -82,7 +72,7 @@ region_yearly_summary = region_yearly_summary.withColumn(
 )
 
 ##########################################
-# ETL pour country_statistics (ETL3)
+# ETL pour country_statistics (ETL2)
 ##########################################
 
 # Extraction des données vaccination et réutilisation de covid_data
@@ -130,7 +120,6 @@ postgres_properties = {
 }
 
 # Insertion des agrégats dans les tables PostgreSQL correspondantes
-global_total_case.write.jdbc(url=postgres_url, table="global_total_case", mode="overwrite", properties=postgres_properties)
 region_yearly_summary.write.jdbc(url=postgres_url, table="region_yearly_summary", mode="overwrite", properties=postgres_properties)
 country_statistics.write.jdbc(url=postgres_url, table="country_statistics", mode="overwrite", properties=postgres_properties)
 
