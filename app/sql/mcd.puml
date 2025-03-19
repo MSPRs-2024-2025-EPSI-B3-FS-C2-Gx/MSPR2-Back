@@ -5,6 +5,7 @@ entity "country_statistics" as cs {
   --
   total_cases : INT
   total_vaccinated : INT
+  population : INT
 }
 
 ' Définition de la table region_yearly_summary
