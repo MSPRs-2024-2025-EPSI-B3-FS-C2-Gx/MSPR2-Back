@@ -1,13 +1,11 @@
 @startuml
 
-' Table WhoRegion
 entity "WhoRegion" as wr {
   * short_code : VARCHAR(3)
   --
   name : TEXT
 }
 
-' Table Country
 entity "Country" as c {
   * short_code : VARCHAR(3)
   --
@@ -15,14 +13,12 @@ entity "Country" as c {
   who_region_short_code : VARCHAR(3) [FK => WhoRegion.short_code]
 }
 
-' Table Disease
 entity "Disease" as d {
   * id : INT
   --
   name : TEXT
 }
 
-' Table Vaccine
 entity "Vaccine" as v {
   * id : INT
   --
@@ -30,7 +26,6 @@ entity "Vaccine" as v {
   disease_id : INT [FK => Disease.id]
 }
 
-' Table WeeklyStatistics
 entity "WeeklyStatistics" as ws {
   * id : INT
   --
@@ -42,7 +37,6 @@ entity "WeeklyStatistics" as ws {
   week_new_reported_deaths : INT
 }
 
-' Table DailyStatistics
 entity "DailyStatistics" as ds {
   * id : INT
   --
