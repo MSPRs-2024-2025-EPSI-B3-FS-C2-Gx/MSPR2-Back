@@ -1,69 +1,57 @@
 @startuml
 
 entity "WhoRegion" as wr {
-  * short_code : VARCHAR(3)
+  * short_code : VARCHAR(5) <<PK, indexed>>
   --
   name : TEXT
 }
 
 entity "Country" as c {
-  * short_code : VARCHAR(3)
+  * short_code : VARCHAR(3) <<PK, indexed>>
   --
   name : TEXT
-  who_region_short_code : VARCHAR(3) [FK => WhoRegion.short_code]
+  who_region_short_code : VARCHAR(3) <<FK, indexed>> [FK => WhoRegion.short_code]
 }
 
 entity "Disease" as d {
-  * id : INT
+  * id : INT <<PK>>
   --
   name : TEXT
 }
 
 entity "Vaccine" as v {
-  * id : INT
+  * id : INT <<PK>>
   --
   name : TEXT
-  disease_id : INT [FK => Disease.id]
+  disease_id : INT <<FK>> [FK => Disease.id]
 }
 
 entity "WeeklyStatistics" as ws {
-  * id : INT
+  * id : INT <<PK>>
   --
-  country_short_code : VARCHAR(3) [FK => Country.short_code]
-  disease_id : INT [FK => Disease.id]
+  country_short_code : VARCHAR(3) <<FK, indexed>> [FK => Country.short_code]
+  disease_id : INT <<FK>> [FK => Disease.id]
   date_of_report : DATE
   week_of_year : INT
   week_new_reported_cases : INT
   week_new_reported_deaths : INT
 }
 
-entity "DailyStatistics" as ds {
-  * id : INT
+entity "VaccineDailyStatistics" as ds {
+  * id : INT <<PK>>
   --
-  country_short_code : VARCHAR(3) [FK => Country.short_code]
-  vaccine_id : INT [FK => Vaccine.id]
+  country_short_code : VARCHAR(3) <<FK, indexed>> [FK => Country.short_code]
+  vaccine_id : INT <<FK>> [FK => Vaccine.id]
   date_of_report : DATE
   new_reported_doses : INT
 }
 
-' Définition des relations
-
-' 1. Country est lié à WhoRegion (1-N)
+' Relations
 wr ||--o{ c : "1 - N"
-
-' 2. Country est lié à WeeklyStatistics (1-N)
 c ||--o{ ws : "1 - N"
-
-' 3. Country est lié à DailyStatistics (1-N)
 c ||--o{ ds : "1 - N"
-
-' 4. WeeklyStatistics est lié à Disease (N-1)
 ws }o--|| d : "N - 1"
-
-' 5. Vaccine est lié à Disease (N-1)
 v }o--|| d : "N - 1"
-
-' 6. DailyStatistics est lié à Vaccine (N-1)
 ds }o--|| v : "N - 1"
 
 @enduml
