@@ -2,7 +2,12 @@ from flask import Flask, jsonify
 from routes.predict import predict_blueprint
 from routes.metrics import metrics_blueprint
 from routes.tables import tables_blueprint
+from routes.data import data_blueprint
+from routes.worldmap import worldmap_blueprint
+from routes.graph import graph_blueprint
+
 from database.db import get_db_connection
+
 app = Flask(__name__)
 
 # Vérification de l'état du backend
@@ -28,6 +33,9 @@ def check_encoding():
 app.register_blueprint(predict_blueprint, url_prefix="/api")
 app.register_blueprint(metrics_blueprint, url_prefix="/api")
 app.register_blueprint(tables_blueprint, url_prefix="/api")
+app.register_blueprint(data_blueprint, url_prefix="/api")
+app.register_blueprint(worldmap_blueprint, url_prefix="/api")
+app.register_blueprint(graph_blueprint, url_prefix="/api")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
