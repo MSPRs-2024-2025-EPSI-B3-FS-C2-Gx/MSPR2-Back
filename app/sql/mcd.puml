@@ -1,0 +1,57 @@
+@startuml
+
+entity "WhoRegion" as wr {
+  * short_code : VARCHAR(5) <<PK, indexed>>
+  --
+  name : TEXT
+}
+
+entity "Country" as c {
+  * short_code : VARCHAR(3) <<PK, indexed>>
+  --
+  name : TEXT
+  who_region_short_code : VARCHAR(3) <<FK, indexed>> [FK => WhoRegion.short_code]
+}
+
+entity "Disease" as d {
+  * id : INT <<PK>>
+  --
+  name : TEXT
+}
+
+entity "Vaccine" as v {
+  * id : INT <<PK>>
+  --
+  name : TEXT
+  disease_id : INT <<FK>> [FK => Disease.id]
+}
+
+entity "WeeklyStatistics" as ws {
+  * id : INT <<PK>>
+  --
+  country_short_code : VARCHAR(3) <<FK, indexed>> [FK => Country.short_code]
+  disease_id : INT <<FK>> [FK => Disease.id]
+  date_of_report : DATE
+  week_of_year : INT
+  week_new_reported_cases : INT
+  week_new_reported_deaths : INT
+}
+
+entity "VaccineDailyStatistics" as ds {
+  * id : INT <<PK>>
+  --
+  country_short_code : VARCHAR(3) <<FK, indexed>> [FK => Country.short_code]
+  vaccine_id : INT <<FK>> [FK => Vaccine.id]
+  date_of_report : DATE
+  new_reported_doses : INT
+}
+
+' Relations
+wr ||--o{ c : "1 - N"
+c ||--o{ ws : "1 - N"
+c ||--o{ ds : "1 - N"
+ws }o--|| d : "N - 1"
+v }o--|| d : "N - 1"
+ds }o--|| v : "N - 1"
+
+@enduml

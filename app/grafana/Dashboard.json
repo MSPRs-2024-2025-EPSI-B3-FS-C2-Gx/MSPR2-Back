@@ -1,0 +1,948 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 47,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "id": 10,
+      "options": {
+        "basemap": {
+          "config": {
+            "showLabels": true,
+            "theme": "light"
+          },
+          "name": "Layer 0",
+          "opacity": 1,
+          "tooltip": false,
+          "type": "carto"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "Cases_percent",
+                  "mode": "thresholds"
+                },
+                "opacity": 0.7,
+                "size": {
+                  "field": "Cases_percent",
+                  "fixed": 5,
+                  "max": 30,
+                  "min": 5
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "gazetteer": "public/gazetteer/countries.json",
+              "lookup": "Country",
+              "mode": "lookup"
+            },
+            "name": "Cas totaux (%)",
+            "tooltip": true,
+            "type": "markers"
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "Vaccinated_percent",
+                  "mode": "thresholds"
+                },
+                "opacity": 0.7,
+                "size": {
+                  "field": "Vaccinated_percent",
+                  "fixed": 5,
+                  "max": 30,
+                  "min": 5
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/square.svg",
+                  "mode": "fixed"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "B"
+            },
+            "location": {
+              "gazetteer": "public/gazetteer/countries.json",
+              "lookup": "Country",
+              "mode": "lookup"
+            },
+            "name": "Vaccinés (%)",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "allLayers": true,
+          "id": "zero",
+          "lat": 20,
+          "lon": 0,
+          "zoom": 1.5
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \"Country\", (total_cases::float / population) * 100 AS \"Cases_percent\" FROM country_statistics WHERE population IS NOT NULL;",
+          "refId": "A"
+        },
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \"Country\", (total_vaccinated::float / population) * 100 AS \"Vaccinated_percent\" FROM country_statistics WHERE population IS NOT NULL;",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "deet7e5rmk074b"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 15,
+        "x": 9,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "displayMode": "lcd",
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "deet7e5rmk074b"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \"WHO_region\", total_cases AS total_covid_cases\nFROM region_yearly_summary\nWHERE \"Year\" = (SELECT MAX(\"Year\") FROM region_yearly_summary)\nORDER BY \"WHO_region\"\nLIMIT 50;\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [
+                  {
+                    "name": "\"WHO_region\"",
+                    "type": "functionParameter"
+                  }
+                ],
+                "type": "function"
+              },
+              {
+                "name": "SUM",
+                "parameters": [
+                  {
+                    "name": "total_new_cases",
+                    "type": "functionParameter"
+                  }
+                ],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "name": "\"WHO_region\"",
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          },
+          "table": "covid_region_summary"
+        }
+      ],
+      "title": "Nombre de cas par région OMS",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "deet7e5rmk074b"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1000000
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 9,
+        "x": 0,
+        "y": 3
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "deet7e5rmk074b"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(total_cases) AS total_covid_cases\nFROM region_yearly_summary\nWHERE \"Year\" = (SELECT MAX(\"Year\") FROM region_yearly_summary);",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Total des Cas COVID-19 Cumulés",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "deet7e5rmk074b"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "id": 6,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "deet7e5rmk074b"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH yearly_totals AS (\n    SELECT \"Year_ts\",\n           SUM(total_deaths) AS cumulative_deaths,\n           SUM(total_cases) AS cumulative_cases\n    FROM region_yearly_summary\n    WHERE $__timeFilter(\"Year_ts\")\n    GROUP BY \"Year_ts\"\n    ORDER BY \"Year_ts\"\n),\nyearly_diff AS (\n    SELECT \"Year_ts\" AS time,\n           cumulative_deaths,\n           cumulative_cases,\n           LAG(cumulative_deaths) OVER (ORDER BY \"Year_ts\") AS previous_deaths,\n           LAG(cumulative_cases) OVER (ORDER BY \"Year_ts\") AS previous_cases\n    FROM yearly_totals\n)\nSELECT time,\n       ((cumulative_deaths - COALESCE(previous_deaths, 0))::float \n        / NULLIF(cumulative_cases - COALESCE(previous_cases, 0), 0)) * 100 \n       AS \"Case Fatality Ratio (%)\"\nFROM yearly_diff\nORDER BY time;\n",
+          "refId": "B",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Létalité mondiale par année",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "deet7e5rmk074b"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH yearly_data AS (\n    SELECT \"WHO_region\", \"Year_ts\", total_cases,\n           LAG(total_cases) OVER (PARTITION BY \"WHO_region\" ORDER BY \"Year_ts\") AS previous_total\n    FROM region_yearly_summary\n)\nSELECT \"Year_ts\" AS time,\n       \"WHO_region\",\n       (total_cases - COALESCE(previous_total, 0)) AS cases_yearly\nFROM yearly_data\nORDER BY \"Year_ts\", \"WHO_region\";\n",
+          "refId": "C",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Cas par région OMS par année",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1000000
+              },
+              {
+                "color": "red",
+                "value": 10000000
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "id": 9,
+      "options": {
+        "basemap": {
+          "config": {
+            "showLabels": true,
+            "theme": "light"
+          },
+          "name": "Layer 0",
+          "opacity": 1,
+          "tooltip": false,
+          "type": "carto"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": false,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "total_cases",
+                  "mode": "thresholds"
+                },
+                "opacity": 0.6,
+                "size": {
+                  "field": "total_cases",
+                  "fixed": 5,
+                  "max": 30,
+                  "min": 5
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "gazetteer": "public/gazetteer/countries.json",
+              "lookup": "Country",
+              "mode": "lookup"
+            },
+            "name": "Cas totaux",
+            "tooltip": true,
+            "type": "markers"
+          },
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "total_vaccinated",
+                  "mode": "thresholds"
+                },
+                "opacity": 0.6,
+                "size": {
+                  "field": "total_vaccinated",
+                  "fixed": 5,
+                  "max": 30,
+                  "min": 5
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/square.svg",
+                  "mode": "fixed"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                }
+              }
+            },
+            "filterData": {
+              "id": "byRefId",
+              "options": "B"
+            },
+            "location": {
+              "gazetteer": "public/gazetteer/countries.json",
+              "lookup": "Country",
+              "mode": "lookup"
+            },
+            "name": "Vaccinés",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "single"
+        },
+        "view": {
+          "allLayers": true,
+          "id": "zero",
+          "lat": 20,
+          "lon": 0,
+          "zoom": 1.5
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRES}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \"Country\", total_cases FROM country_statistics;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRES}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \"Country\", total_vaccinated FROM country_statistics;",
+          "refId": "B",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Carte du monde - COVID 19 [2020-2024]",
+      "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRES}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "deet7e5rmk074b"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH yearly_data AS (\n    SELECT \"WHO_region\", \"Year_ts\", total_deaths,\n           LAG(total_deaths) OVER (PARTITION BY \"WHO_region\" ORDER BY \"Year_ts\") AS previous_total\n    FROM region_yearly_summary\n)\nSELECT \"Year_ts\" AS time,\n       \"WHO_region\",\n       (total_deaths - COALESCE(previous_total, 0)) AS deaths_yearly\nFROM yearly_data\nORDER BY \"Year_ts\", \"WHO_region\";\n",
+          "refId": "D",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Morts par région OMS par année",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": [
+    "covid19",
+    "dashboard"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "final_database",
+          "value": "deet7e5rmk074b"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "DS_POSTGRES",
+        "options": [],
+        "pluginId": "postgres",
+        "query": "grafana-postgresql-datasource",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "2020-01-01T00:00:00.000Z",
+    "to": "2024-01-01T00:00:00.000Z"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "COVID-19 Global Dashboard - Fusionné",
+  "uid": "eea9dpumikkqoedqd",
+  "version": 43,
+  "weekStart": ""
+}

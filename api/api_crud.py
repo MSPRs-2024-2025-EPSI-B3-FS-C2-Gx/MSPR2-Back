@@ -18,363 +18,371 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-class CovidData(db.Model):
-    __tablename__ = 'covid19_data'
-    id = db.Column(db.Integer, primary_key=True)
-    country = db.Column(db.String(100), nullable=False)
-    date = db.Column(db.DateTime, nullable=False)
-    cumulative_total_cases = db.Column(db.Float)
-    daily_new_cases = db.Column(db.Float)
-    daily_active_cases = db.Column(db.Float)
-    cumulative_total_deaths = db.Column(db.Float)
-    daily_new_deaths = db.Column(db.Float)
-    daily_mortality_rate = db.Column(db.Float)
-    daily_recovery_rate = db.Column(db.Float)
-    continent = db.Column(db.String(50))
-    total_confirmed = db.Column(db.Integer)
-    total_deaths = db.Column(db.Float)
-    total_recovered = db.Column(db.Float)
-    summary_active_cases = db.Column(db.Float)
-    serious_or_critical = db.Column(db.Float)
-    total_cases_per_1m_population = db.Column(db.Float)
-    total_deaths_per_1m_population = db.Column(db.Float)
-    total_tests = db.Column(db.Float)
-    total_tests_per_1m_population = db.Column(db.Float)
-    population = db.Column(db.BigInteger)
-    summary_mortality_rate = db.Column(db.Float)
-    summary_recovery_rate = db.Column(db.Float)
 
-    def to_dict(self, fields=None):
-        data = {
-            'id': self.id,
+# 1) Modèle CountryStatistics
+class CountryStatistics(db.Model):
+    __tablename__ = 'country_statistics'
+    
+    country = db.Column("Country", db.String(255), primary_key=True)
+    total_cases = db.Column("total_cases", db.Integer)
+    total_vaccinated = db.Column("total_vaccinated", db.Integer)
+
+    def to_dict(self):
+        return {
             'country': self.country,
-            'date': self.date.isoformat(),
-            'cumulative_total_cases': self.cumulative_total_cases,
-            'daily_new_cases': self.daily_new_cases,
-            'daily_active_cases': self.daily_active_cases,
-            'cumulative_total_deaths': self.cumulative_total_deaths,
-            'daily_new_deaths': self.daily_new_deaths,
-            'daily_mortality_rate': self.daily_mortality_rate,
-            'daily_recovery_rate': self.daily_recovery_rate,
-            'continent': self.continent,
-            'total_confirmed': self.total_confirmed,
-            'total_deaths': self.total_deaths,
-            'total_recovered': self.total_recovered,
-            'summary_active_cases': self.summary_active_cases,
-            'serious_or_critical': self.serious_or_critical,
-            'total_cases_per_1m_population': self.total_cases_per_1m_population,
-            'total_deaths_per_1m_population': self.total_deaths_per_1m_population,
-            'total_tests': self.total_tests,
-            'total_tests_per_1m_population': self.total_tests_per_1m_population,
-            'population': self.population,
-            'summary_mortality_rate': self.summary_mortality_rate,
-            'summary_recovery_rate': self.summary_recovery_rate,
+            'total_cases': self.total_cases,
+            'total_vaccinated': self.total_vaccinated
         }
-        if fields:
-            return {k: v for k, v in data.items() if k in fields or k == 'id'}
-        return data
 
-   
-@app.route('/coviddata', methods=['GET'])
-def get_covid_data():
+
+# 2) Modèle RegionYearlySummary
+class RegionYearlySummary(db.Model):
+    __tablename__ = 'region_yearly_summary'
+    
+    who_region = db.Column("WHO_region", db.String(50), primary_key=True)
+    year = db.Column("Year", db.Integer, primary_key=True)
+    total_cases = db.Column("total_cases", db.Integer)
+    total_deaths = db.Column("total_deaths", db.Integer)
+    
+    def to_dict(self):
+        return {
+            'who_region': self.who_region,
+            'year': self.year,
+            'total_cases': self.total_cases,
+            'total_deaths': self.total_deaths
+        }
+
+
+# CRUD pour CountryStatistics
+
+@app.route('/country_statistics', methods=['GET'])
+def get_all_country_statistics():
     """
-    Un endpoint qui renvoie l'ensemble des données et permet de filtrer les colonnes retournées.
+    Récupère la liste de tous les enregistrements de la table country_statistics.
     ---
+    tags:
+      - Country Statistics
+    responses:
+      200:
+        description: Liste de tous les enregistrements
+    """
+    records = CountryStatistics.query.all()
+    return jsonify([r.to_dict() for r in records]), 200
+
+@app.route('/country_statistics/<string:country>', methods=['GET'])
+def get_country_statistics(country):
+    """
+    Récupère un enregistrement par le champ 'country'.
+    ---
+    tags:
+      - Country Statistics
     parameters:
-      - name: fields
-        in: query
-        description: "Liste séparée par des virgules indiquant les champs à inclure dans la réponse (ex : id,continent,country,date). Si non fourni, tous les champs sont retournés."
-        required: false
+      - name: country
+        in: path
+        description: Nom du pays
+        required: true
         schema:
           type: string
     responses:
       200:
-        description: "Succès : retourne un tableau d'objets COVIDData."
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                type: object
-              example:
-                - id: 170236
-                  date: "2021-03-11T00:00:00"
-                  country: "Laos"
-                  continent: "Asia"
+        description: Enregistrement trouvé
+      404:
+        description: Enregistrement non trouvé
     """
-    fields_param = request.args.get('fields')
-    fields = fields_param.split(',') if fields_param else None
-
-    records = CovidData.query.all()
-    data = [record.to_dict(fields) for record in records]
-    return jsonify(data), 200
-
-@app.route('/coviddata/<int:id>', methods=['GET'])
-def get_covid_data_item(id):
-    """
-    Un endpoint qui renvoie l'ensemble des données de l'id ciblé.
-    ---
-    parameters:
-      - name: id
-        in: path
-        description: "id ciblé ex:1."
-        required: true
-        schema:
-          type: integer
-    responses:
-      200:
-        description: "Succès : retourne l'object."
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                type: object
-              example:
-                - id: 1
-                  date: "2020-03-15T00:00:00"
-                  country: "Afghanistan"
-                  continent: "Asia"
-    """
-    record = CovidData.query.get_or_404(id)
+    record = CountryStatistics.query.get_or_404(country)
     return jsonify(record.to_dict()), 200
 
-@app.route('/coviddata', methods=['POST'])
-def add_covid_data():
+@app.route('/country_statistics', methods=['POST'])
+def create_country_statistics():
     """
-    Un endpoint qui permet d'ajouté une donnée.
+    Crée un nouvel enregistrement dans la table country_statistics.
     ---
+    tags:
+      - Country Statistics
     parameters:
       - name: body
         in: body
         required: true
-        description: "La nouvelle donnée à ajouter."
+        description: Données du nouveau pays
         schema:
           type: object
           required:
             - country
-            - date
           properties:
             country:
               type: string
-              example: "Afghanistan"
-            date:
-              type: string
-              format: date-time
-              example: "2020-03-15T00:00:00"
-            cumulative_total_cases:
-              type: number
-              example: 100
-            daily_new_cases:
-              type: number
-              example: 5
+              example: "France"
+            total_cases:
+              type: integer
+              example: 12000
+            total_vaccinated:
+              type: integer
+              example: 3000
     responses:
       201:
-        description: "La donnée à bien été ajouté"
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                id:
-                  type: integer
-              example:
-                message: "Donnée ajoutée avec succès"
-                id: 1
+        description: Enregistrement créé
+      400:
+        description: Erreur dans les données fournies
     """
     data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Aucune donnée fournie'}), 400
+    if not data or 'country' not in data:
+        return jsonify({"error": "Le champ 'country' est obligatoire"}), 400
 
-    if 'country' not in data or 'date' not in data:
-        return jsonify({'error': "Les champs 'country' et 'date' sont obligatoires."}), 400
-
-    try:
-        date_value = datetime.fromisoformat(data.get('date'))
-    except Exception:
-        return jsonify({'error': 'Format de date invalide. Attendu un format ISO.'}), 400
-
-    new_record = CovidData(
-        country=data.get('country'),
-        date=date_value,
-        cumulative_total_cases=data.get('cumulative_total_cases'),
-        daily_new_cases=data.get('daily_new_cases'),
-        daily_active_cases=data.get('daily_active_cases'),
-        cumulative_total_deaths=data.get('cumulative_total_deaths'),
-        daily_new_deaths=data.get('daily_new_deaths'),
-        daily_mortality_rate=data.get('daily_mortality_rate'),
-        daily_recovery_rate=data.get('daily_recovery_rate'),
-        continent=data.get('continent'),
-        total_confirmed=data.get('total_confirmed'),
-        total_deaths=data.get('total_deaths'),
-        total_recovered=data.get('total_recovered'),
-        summary_active_cases=data.get('summary_active_cases'),
-        serious_or_critical=data.get('serious_or_critical'),
-        total_cases_per_1m_population=data.get('total_cases_per_1m_population'),
-        total_deaths_per_1m_population=data.get('total_deaths_per_1m_population'),
-        total_tests=data.get('total_tests'),
-        total_tests_per_1m_population=data.get('total_tests_per_1m_population'),
-        population=data.get('population'),
-        summary_mortality_rate=data.get('summary_mortality_rate'),
-        summary_recovery_rate=data.get('summary_recovery_rate')
+    new_record = CountryStatistics(
+        country=data['country'],
+        total_cases=data.get('total_cases', 0),
+        total_vaccinated=data.get('total_vaccinated', 0)
     )
     db.session.add(new_record)
     db.session.commit()
-    return jsonify({'message': 'Donnée ajoutée avec succès', 'id': new_record.id}), 201
+    return jsonify({"message": "Enregistrement créé avec succès"}), 201
 
-@app.route('/coviddata/<int:id>', methods=['PUT'])
-def update_covid_data(id):
+@app.route('/country_statistics/<string:country>', methods=['PUT'])
+def update_country_statistics(country):
     """
-    Un endpoint qui permet de mettre à jour une donnée existante.
+    Met à jour un enregistrement existant dans la table country_statistics.
     ---
+    tags:
+      - Country Statistics
     parameters:
-      - name: id
+      - name: country
         in: path
-        description: "Identifiant unique de la donnée à mettre à jour."
+        description: Nom du pays à mettre à jour
+        required: true
+        schema:
+          type: string
+      - name: body
+        in: body
+        required: true
+        description: Champs à mettre à jour
+        schema:
+          type: object
+          properties:
+            total_cases:
+              type: integer
+            total_vaccinated:
+              type: integer
+    responses:
+      200:
+        description: Enregistrement mis à jour
+      404:
+        description: Enregistrement non trouvé
+    """
+    record = CountryStatistics.query.get_or_404(country)
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Aucune donnée fournie pour la mise à jour"}), 400
+
+    if 'total_cases' in data:
+        record.total_cases = data['total_cases']
+    if 'total_vaccinated' in data:
+        record.total_vaccinated = data['total_vaccinated']
+
+    db.session.commit()
+    return jsonify({"message": "Enregistrement mis à jour avec succès"}), 200
+
+@app.route('/country_statistics/<string:country>', methods=['DELETE'])
+def delete_country_statistics(country):
+    """
+    Supprime un enregistrement de la table country_statistics.
+    ---
+    tags:
+      - Country Statistics
+    parameters:
+      - name: country
+        in: path
+        description: Nom du pays à supprimer
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Enregistrement supprimé
+      404:
+        description: Enregistrement non trouvé
+    """
+    record = CountryStatistics.query.get_or_404(country)
+    db.session.delete(record)
+    db.session.commit()
+    return jsonify({"message": "Enregistrement supprimé avec succès"}), 200
+
+
+# CRUD pour RegionYearlySummary 
+
+@app.route('/region_yearly_summary', methods=['GET'])
+def get_all_region_yearly_summaries():
+    """
+    Récupère la liste de tous les enregistrements de la table region_yearly_summary.
+    ---
+    tags:
+      - Region Yearly Summary
+    responses:
+      200:
+        description: Liste de tous les enregistrements
+    """
+    records = RegionYearlySummary.query.all()
+    return jsonify([r.to_dict() for r in records]), 200
+
+@app.route('/region_yearly_summary/<string:who_region>/<int:year>', methods=['GET'])
+def get_region_yearly_summary(who_region, year):
+    """
+    Récupère un enregistrement par la clé composite (who_region et year).
+    ---
+    tags:
+      - Region Yearly Summary
+    parameters:
+      - name: who_region
+        in: path
+        description: Région (WHO_region)
+        required: true
+        schema:
+          type: string
+      - name: year
+        in: path
+        description: Année
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Enregistrement trouvé
+      404:
+        description: Enregistrement non trouvé
+    """
+    record = RegionYearlySummary.query.get_or_404((who_region, year))
+    return jsonify(record.to_dict()), 200
+
+@app.route('/region_yearly_summary', methods=['POST'])
+def create_region_yearly_summary():
+    """
+    Crée un nouvel enregistrement dans la table region_yearly_summary.
+    ---
+    tags:
+      - Region Yearly Summary
+    parameters:
+      - name: body
+        in: body
+        required: true
+        description: Données pour le résumé régional
+        schema:
+          type: object
+          required:
+            - who_region
+            - year
+          properties:
+            who_region:
+              type: string
+              example: "Europe"
+            year:
+              type: integer
+              example: 2021
+            total_cases:
+              type: integer
+              example: 200000
+            total_deaths:
+              type: integer
+              example: 5000
+    responses:
+      201:
+        description: Enregistrement créé
+      400:
+        description: Erreur dans les données fournies
+    """
+    data = request.get_json()
+    if not data or 'who_region' not in data or 'year' not in data:
+        return jsonify({"error": "Les champs 'who_region' et 'year' sont obligatoires"}), 400
+
+    new_record = RegionYearlySummary(
+        who_region=data['who_region'],
+        year=data['year'],
+        total_cases=data.get('total_cases', 0),
+        total_deaths=data.get('total_deaths', 0)
+    )
+    db.session.add(new_record)
+    db.session.commit()
+    return jsonify({"message": "Enregistrement créé avec succès"}), 201
+
+@app.route('/region_yearly_summary/<string:who_region>/<int:year>', methods=['PUT'])
+def update_region_yearly_summary(who_region, year):
+    """
+    Met à jour un enregistrement existant dans la table region_yearly_summary.
+    ---
+    tags:
+      - Region Yearly Summary
+    parameters:
+      - name: who_region
+        in: path
+        description: Région (WHO_region)
+        required: true
+        schema:
+          type: string
+      - name: year
+        in: path
+        description: Année
         required: true
         schema:
           type: integer
       - name: body
         in: body
         required: true
-        description: "Il n'est pas obligatoire de mettre l'ensemble des informations pour le modifier"
+        description: Champs à mettre à jour
         schema:
           type: object
           properties:
-            country:
-              type: string
-              example: "Afghanistan"
-            date:
-              type: string
-              format: date-time
-              example: "2020-03-15T00:00:00"
-            cumulative_total_cases:
-              type: number
-              example: 100
-            daily_new_cases:
-              type: number
-              example: 5
-            daily_active_cases:
-              type: number
-              example: 50
-            cumulative_total_deaths:
-              type: number
-              example: 10
-            daily_new_deaths:
-              type: number
-              example: 1
-            daily_mortality_rate:
-              type: number
-              example: 0.05
-            daily_recovery_rate:
-              type: number
-              example: 0.10
-            continent:
-              type: string
-              example: "Asia"
-            total_confirmed:
+            total_cases:
               type: integer
-              example: 1500
             total_deaths:
-              type: number
-              example: 50
-            total_recovered:
-              type: number
-              example: 1000
-            summary_active_cases:
-              type: number
-              example: 450
-            serious_or_critical:
-              type: number
-              example: 20
-            total_cases_per_1m_population:
-              type: number
-              example: 120.5
-            total_deaths_per_1m_population:
-              type: number
-              example: 3.4
-            total_tests:
-              type: number
-              example: 50000
-            total_tests_per_1m_population:
-              type: number
-              example: 350.2
-            population:
               type: integer
-              example: 1000000
-            summary_mortality_rate:
-              type: number
-              example: 0.03
-            summary_recovery_rate:
-              type: number
-              example: 0.85
     responses:
       200:
-        description: "Succès : la donnée a été mise à jour avec succès."
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-              example:
-                message: "Donnée mise à jour avec succès"
-      400:
-        description: "Erreur : Aucune donnée fournie ou format invalide pour certains champs."
+        description: Enregistrement mis à jour
+      404:
+        description: Enregistrement non trouvé
     """
-    record = CovidData.query.get_or_404(id)
+    record = RegionYearlySummary.query.get_or_404((who_region, year))
     data = request.get_json()
-
     if not data:
-        return jsonify({'error': 'Aucune donnée fournie pour la mise à jour.'}), 400
+        return jsonify({"error": "Aucune donnée fournie pour la mise à jour"}), 400
 
-    for key, value in data.items():
-        if key in CovidData.__table__.columns.keys() and key != 'id':
-            if key == 'date':
-                try:
-                    setattr(record, key, datetime.fromisoformat(value))
-                except Exception:
-                    return jsonify({'error': 'Format de date invalide pour le champ date.'}), 400
-            else:
-                setattr(record, key, value)
+    if 'total_cases' in data:
+        record.total_cases = data['total_cases']
+    if 'total_deaths' in data:
+        record.total_deaths = data['total_deaths']
 
     db.session.commit()
-    return jsonify({'message': 'Donnée mise à jour avec succès'}), 200
+    return jsonify({"message": "Enregistrement mis à jour avec succès"}), 200
 
-@app.route('/coviddata/<int:id>', methods=['DELETE'])
-def delete_covid_data(id):
+@app.route('/region_yearly_summary/<string:who_region>/<int:year>', methods=['DELETE'])
+def delete_region_yearly_summary(who_region, year):
     """
-    Un endpoint qui permet de supprimer une donnée existante.
+    Supprime un enregistrement de la table region_yearly_summary.
     ---
+    tags:
+      - Region Yearly Summary
     parameters:
-      - name: id
+      - name: who_region
         in: path
-        description: "Id de la donnée à supprimer"
+        description: Région (WHO_region)
+        required: true
+        schema:
+          type: string
+      - name: year
+        in: path
+        description: Année
         required: true
         schema:
           type: integer
     responses:
       200:
-        description: "Donnée bien supprimé"
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-              example:
-                message: "Donnée supprimée avec succès"
+        description: Enregistrement supprimé
       404:
-        description: "Erreur : donnée non trouvée."
+        description: Enregistrement non trouvé
     """
-    record = CovidData.query.get_or_404(id)
+    record = RegionYearlySummary.query.get_or_404((who_region, year))
     db.session.delete(record)
     db.session.commit()
-    return jsonify({'message': 'Donnée supprimée avec succès'}), 200
+    return jsonify({"message": "Enregistrement supprimé avec succès"}), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
