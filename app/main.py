@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-from routes.predict import predict_blueprint
+from routes.predict_france_with_model import predict_blueprint
 from routes.metrics import metrics_blueprint
 from routes.tables import tables_blueprint
 from routes.data import data_blueprint

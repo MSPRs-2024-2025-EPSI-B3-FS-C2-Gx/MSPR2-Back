@@ -7,11 +7,17 @@ from sklearn.preprocessing import MinMaxScaler
 import joblib
 import os
 from sklearn.metrics import mean_absolute_error
+from flask import request, jsonify
+import pandas as pd
+import numpy as np
+from sklearn.metrics import mean_absolute_error
+
 
 # Configuration
-CSV_PATH = "C:/Users/merouanmeneu/Desktop/MSPR501/spark-exemple-covid/owid-covid-data.csv"
-MODEL_PATH = "C:/Users/merouanmeneu/Desktop/MSPR501/spark-exemple-covid/modele_lstm_owid.pth"
-ENCODER_PATH = "C:/Users/merouanmeneu/Desktop/MSPR501/spark-exemple-covid/label_encoder.pkl"
+CSV_PATH = "C:/Users/merou/OneDrive/Bureau/ESPI_MSPR/MSPR501/pandemie_app/spark-exemple-covid/owid-covid-data.csv"
+MODEL_PATH = "C:/Users/merou/OneDrive/Bureau/ESPI_MSPR/MSPR501/pandemie_app/spark-exemple-covid/modele_lstm_owid.pth"
+ENCODER_PATH = "C:/Users/merou/OneDrive/Bureau/ESPI_MSPR/MSPR501/pandemie_app/spark-exemple-covid/label_encoder.pkl"
+
 LOOKBACK = 50
 DAYS_TO_PREDICT = 30
 TESTS = [
@@ -115,3 +121,5 @@ for country, start_predict_date in TESTS:
     plt.tight_layout()
     plt.xticks(rotation=45)
     plt.show()
+
+
