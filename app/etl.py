@@ -1,154 +1,175 @@
-# Importation des modules et fonctions nécessaires :
-# - pyspark.sql.SparkSession : pour créer et gérer la session Spark
-# - pyspark.sql.functions : pour effectuer diverses transformations sur les colonnes
-# - pyspark.sql.types : pour définir explicitement les types de données lors des conversions
-# - pyspark.sql.window : pour appliquer des opérations sur des fenêtres (par exemple, récupérer la dernière valeur par groupe)
-# - dotenv : pour charger les variables d'environnement depuis un fichier .env
-# - os : pour accéder aux variables d'environnement système
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date, year, concat, lit, to_timestamp, max as spark_max, sum as spark_sum, row_number, when
-from pyspark.sql.types import DoubleType, IntegerType
-from pyspark.sql.window import Window
-from dotenv import load_dotenv
 import os
 
-# Chargement des variables d'environnement à partir du fichier .env
-# Ces variables configurent les informations de connexion à la base de données PostgreSQL
+import psycopg2
+from dotenv import load_dotenv
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+from pyspark.sql.functions import (
+    col, to_date, date_trunc, sum as spark_sum, explode, split, trim, lower, lag, when, lit, array, coalesce
+)
+from pyspark.sql.types import IntegerType, DoubleType
+from pyspark.sql.window import Window
+
 load_dotenv()
 
+# Récupérer les variables d'environnement
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
-
-# Vérification que toutes les variables nécessaires sont bien définies.
-# En cas de variable manquante, une erreur est levée pour stopper l'exécution.
 if not all([DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD]):
-    raise ValueError("Une ou plusieurs variables d'environnement sont manquantes dans le fichier .env.")
+    raise ValueError("Variables d'environnement manquantes")
 
-# Initialisation de la session Spark avec l'application nommée "ETL_COVID19_Postgres"
-# Le pilote PostgreSQL est inclus via le fichier JAR spécifié.
-spark = SparkSession.builder \
-    .appName("ETL_COVID19_Postgres") \
-    .config("spark.jars", "../postgresql-42.7.5.jar") \
-    .getOrCreate()
-
-##########################################
-# ETL : Agrégation annuelle par région (region_yearly_summary)
-##########################################
-
-# Extraction des données COVID-19 depuis le fichier CSV global de l'OMS
-covid_data = spark.read.option("header", "true").csv("data/data_covid/WHO-COVID-19-global-data.csv")
-
-# Transformation des données :
-# 1. Conversion de la colonne "Date_reported" en type date au format "yyyy-MM-dd"
-covid_data = covid_data.withColumn("Date_reported", to_date(col("Date_reported"), "yyyy-MM-dd"))
-
-# 2. Remplacement des valeurs NULL par des valeurs par défaut pour éviter des problèmes lors des agrégations
-covid_data = covid_data.fillna({
-    "New_cases": 0,
-    "New_deaths": 0,
-    "Cumulative_cases": 0,
-    "Cumulative_deaths": 0,
-    "WHO_region": "UNKNOWN"
-})
-
-# 3. Conversion explicite des colonnes numériques en type Double pour garantir la précision lors des calculs
-covid_data = covid_data.withColumn("New_cases", col("New_cases").cast(DoubleType())) \
-                       .withColumn("New_deaths", col("New_deaths").cast(DoubleType())) \
-                       .withColumn("Cumulative_cases", col("Cumulative_cases").cast(DoubleType())) \
-                       .withColumn("Cumulative_deaths", col("Cumulative_deaths").cast(DoubleType()))
-
-# 4. Création d'une colonne "Year" extraite de la date, facilitant ainsi les agrégations annuelles
-covid_data = covid_data.withColumn("Year", year(col("Date_reported")))
-
-# Récupération de la dernière valeur de "Cumulative_cases" pour chaque combinaison de pays et d'année :
-# - On définit une fenêtre partitionnée par "Country" et "Year", triée par "Date_reported" en ordre décroissant.
-# - La fonction row_number() permet d'identifier la dernière ligne (rn == 1) pour chaque groupe.
-window_spec_country_year = Window.partitionBy("Country", "Year").orderBy(col("Date_reported").desc())
-latest_per_country_year = covid_data.withColumn("rn", row_number().over(window_spec_country_year)) \
-                                      .filter(col("rn") == 1) \
-                                      .drop("rn")
-
-# Agrégation par région et année :
-# On calcule la somme des dernières valeurs de "Cumulative_cases" et "Cumulative_deaths" pour chaque région.
-region_yearly_summary = latest_per_country_year.groupBy("WHO_region", "Year") \
-    .agg(
-        spark_sum("Cumulative_cases").alias("total_cases"),
-        spark_sum("Cumulative_deaths").alias("total_deaths")
+# Nettoyer les tables dans PostgreSQL dans l'ordre des dépendances
+try:
+    conn = psycopg2.connect(
+        host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USER, password=DB_PASSWORD
     )
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute("DELETE FROM daily_vaccine_statistics;")
+    cur.execute("DELETE FROM weekly_statistics;")
+    cur.execute("DELETE FROM vaccine;")
+    cur.execute("DELETE FROM country;")
+    cur.execute("DELETE FROM disease;")
+    cur.execute("DELETE FROM who_region;")
+    cur.close()
+    conn.close()
+    print("Les tables de référence ont été vidées avec succès.")
+except Exception as e:
+    print("Erreur lors du nettoyage des tables :", e)
+    raise
 
-# Ajout d'une colonne "Year_ts" qui convertit l'année en un timestamp correspondant au 1er janvier de l'année,
-# ce qui peut faciliter des opérations temporelles ultérieures.
-region_yearly_summary = region_yearly_summary.withColumn(
-    "Year_ts",
-    to_timestamp(concat(col("Year").cast("string"), lit("-01-01")), "yyyy-MM-dd")
-)
+# Création de la session Spark
+spark = SparkSession.builder \
+    .appName("ETL_COVID19_MCD") \
+    .config("spark.jars", "/app/postgresql-42.7.5.jar") \
+    .getOrCreate()
+spark.sparkContext.setLogLevel("ERROR")
 
-##########################################
-# ETL : Statistiques par pays (country_statistics)
-##########################################
-
-# Extraction des données de vaccination depuis le fichier CSV correspondant
-vaccination_data = spark.read.option("header", "true").csv("data/data_covid/vaccination-data.csv")
-# Suppression des doublons et remplacement des valeurs manquantes dans la colonne "PERSONS_VACCINATED_1PLUS_DOSE"
-vaccination_data = vaccination_data.dropDuplicates().fillna({"PERSONS_VACCINATED_1PLUS_DOSE": 0})
-# Conversion de la colonne de vaccination en type Double pour assurer la précision des calculs
-vaccination_data = vaccination_data.withColumn("PERSONS_VACCINATED_1PLUS_DOSE", col("PERSONS_VACCINATED_1PLUS_DOSE").cast(DoubleType()))
-
-# Pour obtenir les statistiques par pays, on sélectionne la dernière valeur de "Cumulative_cases" pour chaque pays.
-# Une fenêtre partitionnée par "Country" est définie et triée par "Date_reported" en ordre décroissant.
-window_spec_country = Window.partitionBy("Country").orderBy(col("Date_reported").desc())
-latest_country_stats = covid_data.withColumn("rn", row_number().over(window_spec_country)) \
-                                 .filter(col("rn") == 1) \
-                                 .drop("rn")
-
-# Sélection des colonnes essentielles pour les statistiques par pays : nom du pays et nombre total de cas
-country_stats = latest_country_stats.select(
-    "Country",
-    col("Cumulative_cases").alias("total_cases")
-)
-
-# Pour les données de vaccination, on récupère la valeur maximale de "PERSONS_VACCINATED_1PLUS_DOSE" par pays,
-# afin d'obtenir le nombre total de personnes vaccinées.
-vaccination_latest = vaccination_data.groupBy("COUNTRY") \
-    .agg(spark_max("PERSONS_VACCINATED_1PLUS_DOSE").alias("total_vaccinated"))
-
-# Fusion des statistiques COVID et des données de vaccination en effectuant une jointure sur le nom du pays.
-# La jointure est réalisée en tenant compte de la casse et des noms exacts.
-country_statistics = country_stats.join(
-    vaccination_latest,
-    country_stats.Country == vaccination_latest.COUNTRY,
-    "inner"
-).select(
-    country_stats.Country.alias("Country"),
-    "total_cases",
-    "total_vaccinated"
-)
-
-##########################################
-# Insertion des données agrégées dans PostgreSQL
-##########################################
-
-# Construction de l'URL de connexion JDBC pour PostgreSQL en utilisant les variables d'environnement
 postgres_url = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
-# Définition des propriétés de connexion, incluant l'utilisateur, le mot de passe et le pilote JDBC
 postgres_properties = {
     "user": DB_USER,
     "password": DB_PASSWORD,
     "driver": "org.postgresql.Driver"
 }
 
-# Insertion des DataFrames agrégés dans les tables PostgreSQL correspondantes :
-# - region_yearly_summary est inséré dans la table "region_yearly_summary"
-# - country_statistics est inséré dans la table "country_statistics"
-# Le mode "overwrite" permet de remplacer les données existantes.
-region_yearly_summary.write.jdbc(url=postgres_url, table="region_yearly_summary", mode="overwrite", properties=postgres_properties)
-country_statistics.write.jdbc(url=postgres_url, table="country_statistics", mode="overwrite", properties=postgres_properties)
+# Chargement des CSV
+covid_data = spark.read.option("header", "true").csv("data/data_covid/WHO-COVID-19-global-data.csv")
+vaccination_data = spark.read.option("header", "true").csv("data/data_covid/vaccination-data.csv")
+vaccination_metadata = spark.read.option("header", "true").csv("data/data_covid/vaccination-metadata.csv")
 
-# Affichage d'un message de confirmation après la réussite de l'insertion des données
-print("✅ Données insérées avec succès dans PostgreSQL.")
+# Traitement de covid_data
+covid_data = covid_data.withColumn("Date_reported", to_date(col("Date_reported"), "yyyy-MM-dd"))
+covid_data = covid_data.fillna({"New_cases": 0, "New_deaths": 0})
+# Remplacer les valeurs nulles de WHO_region par "UNKNOWN"
+covid_data = covid_data.na.fill({"WHO_region": "UNKNOWN"})
 
-# Fermeture de la session Spark pour libérer les ressources allouées
+# Mapping des régions WHO
+who_region_mapping = {
+    "EMRO": "Eastern Mediterranean Region",
+    "EURO": "European Region",
+    "AFRO": "African Region",
+    "WPRO": "Western Pacific Region",
+    "AMRO": "Region of the Americas",
+    "SEARO": "South-East Asia Region",
+    "UNKNOWN": "Other"
+}
+who_regions = covid_data.select(col("WHO_region").alias("who_region_short_code")) \
+    .distinct() \
+    .withColumn("who_region_name",
+                when(col("who_region_short_code") == "EMRO", who_region_mapping["EMRO"])
+                .when(col("who_region_short_code") == "EURO", who_region_mapping["EURO"])
+                .when(col("who_region_short_code") == "AFRO", who_region_mapping["AFRO"])
+                .when(col("who_region_short_code") == "WPRO", who_region_mapping["WPRO"])
+                .when(col("who_region_short_code") == "AMRO", who_region_mapping["AMRO"])
+                .when(col("who_region_short_code") == "SEARO", who_region_mapping["SEARO"])
+                .otherwise(who_region_mapping["UNKNOWN"]))
+
+# Construction de la table country
+countries = covid_data.select(
+    col("Country_code").alias("country_short_code"),
+    col("Country").alias("country_name"),
+    col("WHO_region").alias("who_region_short_code")
+).distinct()
+
+# Création de la table disease avec id explicite
+diseases = spark.createDataFrame([(1, "COVID-19")], ["id", "name"])
+
+# Création de la table vaccine à partir de vaccination_metadata
+vaccine_window = Window.partitionBy(lit(1)).orderBy("name")
+vaccines = vaccination_metadata.select(
+    col("VACCINE_NAME").alias("name")
+).distinct().withColumn("treated_disease", lit(1))
+vaccines = vaccines.withColumn("id", F.row_number().over(vaccine_window)) \
+    .select("id", "name", "treated_disease")
+default_vaccine = spark.createDataFrame([(0, "unknown", 1)], ["id", "name", "treated_disease"])
+vaccines_final = vaccines.unionByName(default_vaccine)
+
+# Agrégation hebdomadaire : weekly_statistics
+weekly_stats = covid_data.groupBy(
+    col("Country_code").alias("country_short_code"),
+    to_date(date_trunc("week", col("Date_reported"))).alias("date_of_report")
+).agg(
+    spark_sum("New_cases").cast(IntegerType()).alias("week_new_reported_cases"),
+    spark_sum("New_deaths").cast(IntegerType()).alias("week_new_reported_deaths")
+).withColumn("disease_id", lit(1))
+
+# Traitement pour daily_vaccine_statistics
+vaccination_data = vaccination_data.withColumn("TOTAL_VACCINATIONS", col("TOTAL_VACCINATIONS").cast(DoubleType()))
+vaccination_data = vaccination_data.repartition("COUNTRY")
+window_spec = Window.partitionBy("COUNTRY").orderBy("DATE_UPDATED")
+daily_vaccine_raw = vaccination_data.withColumn(
+    "prev_vaccines", lag("TOTAL_VACCINATIONS").over(window_spec)
+).withColumn(
+    "new_reported_shots_temp", col("TOTAL_VACCINATIONS") - col("prev_vaccines")
+).withColumn(
+    "new_reported_shots",
+    when(col("new_reported_shots_temp").isNull(), col("TOTAL_VACCINATIONS"))
+    .otherwise(col("new_reported_shots_temp"))
+)
+daily_vaccine = daily_vaccine_raw.withColumn(
+    "vaccine_array",
+    when((col("VACCINES_USED").isNull()) | (trim(col("VACCINES_USED")) == ""), array(lit("unknown")))
+    .otherwise(split(trim(col("VACCINES_USED")), ","))
+)
+daily_vaccine_exploded = daily_vaccine.withColumn("vaccine", explode("vaccine_array"))
+# Sélection et nettoyage de la colonne COUNTRY; filtrer les lignes sans date
+daily_vaccine_df = daily_vaccine_exploded.select(
+    lower(trim(col("COUNTRY"))).alias("country_name_clean"),
+    to_date(col("DATE_UPDATED"), "yyyy-MM-dd").alias("day_of_report"),
+    col("vaccine"),
+    col("new_reported_shots").cast(IntegerType())
+).filter(col("day_of_report").isNotNull())
+# Nettoyer la table countries pour le join
+countries_clean = countries.withColumn("country_name_clean", lower(trim(col("country_name")))) \
+    .select("country_name_clean", "country_short_code")
+daily_vaccine_with_code = daily_vaccine_df.join(
+    countries_clean, on="country_name_clean", how="left"
+)
+daily_vaccine_final = daily_vaccine_with_code.join(
+    vaccines_final, daily_vaccine_with_code.vaccine == vaccines_final.name, "left"
+).select(
+    "country_short_code",
+    "day_of_report",
+    col("id").alias("vaccine_id"),
+    coalesce(col("new_reported_shots"), lit(0)).alias("new_reported_shots")
+).filter(col("country_short_code").isNotNull())
+
+# Insertion des tables dans PostgreSQL
+tables = [
+    (who_regions, "who_region"),
+    (countries, "country"),
+    (diseases, "disease"),
+    (vaccines_final, "vaccine"),
+    (weekly_stats, "weekly_statistics"),
+    (daily_vaccine_final, "daily_vaccine_statistics")
+]
+
+for df, table_name in tables:
+    print(f"Insertion de la table {table_name}")
+    df.write.jdbc(url=postgres_url, table=table_name, mode="append", properties=postgres_properties)
+
+print("✅ Données insérées avec succès dans PostgreSQL")
 spark.stop()
