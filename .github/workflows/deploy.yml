@@ -20,25 +20,13 @@ jobs:
         env:
           SSHPASS: ${{ secrets.VPS_PASS }}
         run: |
-          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
             cd ${{ secrets.VPS_APP_PATH }}
-      
-            # Sauvegarder l'ancien .env
-            if [ -f .env ]; then
-              cp .env .env.bak
-            fi
-      
             echo "📥 Pulling latest changes..."
             git pull origin main
-      
-            # Restaurer .env après pull si disparu
-            if [ ! -f .env ] && [ -f .env.bak ]; then
-              mv .env.bak .env
-            fi
-      
-            echo "🔄 Rebuilding containers..."
+            echo "🧹 Stopping old containers..."
             docker compose down
+            echo "🐳 Building and restarting..."
             docker compose up -d --build
-      
-            echo "✅ Deploy terminé"
+            echo "✅ Done!"
           EOF
