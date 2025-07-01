@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
 from routes.predict_france_with_model import predict_blueprint
 from routes.metrics import metrics_blueprint
 from routes.tables import tables_blueprint
@@ -9,6 +10,7 @@ from routes.graph import graph_blueprint
 from database.db import get_db_connection
 
 app = Flask(__name__)
+CORS(app)
 
 # Vérification de l'état du backend
 @app.route('/health', methods=['GET'])
