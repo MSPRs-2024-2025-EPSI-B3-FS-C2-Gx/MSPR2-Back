@@ -8,10 +8,4 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env  # Prioritaire
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=msprdb
-      - DB_USER=user
-      - DB_PASSWORD=password
+      - .env 
