@@ -1,0 +1,32 @@
+name: Deploy to VPS (with sshpass)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repo
+        uses: actions/checkout@v3
+
+      - name: 🧰 Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: 🚀 Deploy to VPS
+        env:
+          SSHPASS: ${{ secrets.VPS_PASS }}
+        run: |
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+            cd ${{ secrets.VPS_APP_PATH }}
+            echo "📥 Pulling latest changes..."
+            git pull origin main
+            echo "🧹 Stopping old containers..."
+            docker compose down
+            echo "🐳 Building and restarting..."
+            docker compose up -d --build
+            echo "✅ Done!"
+          EOF
