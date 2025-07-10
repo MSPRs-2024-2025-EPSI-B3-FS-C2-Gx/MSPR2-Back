@@ -4,7 +4,6 @@ from sqlalchemy import text
 from database.db import get_db_connection
 import datetime
 import jwt
-import datetime
 from functools import wraps
 
 users_blueprint = Blueprint('users', __name__)
@@ -33,7 +32,6 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
-
 # ✅ Inscription d'un utilisateur
 @users_blueprint.route('/register', methods=['POST'])
 def register_user():
@@ -50,7 +48,6 @@ def register_user():
     try:
         conn = get_db_connection()
         with conn.begin() as connection:
-            # Vérifie si l'utilisateur existe déjà
             result = connection.execute(
                 text("SELECT * FROM users WHERE email = :email"),
                 {"email": email}
@@ -69,7 +66,6 @@ def register_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 # ✅ Connexion avec génération de token JWT
 @users_blueprint.route('/login', methods=['POST'])
 def login_user():
@@ -83,7 +79,6 @@ def login_user():
     try:
         conn = get_db_connection()
         with conn.connect() as connection:
-            print(type(password))
             user = connection.execute(
                 text("SELECT id_user, email, password, role FROM users WHERE email = :email"),
                 {"email": email}
@@ -94,10 +89,8 @@ def login_user():
                     'id_user': user[0],
                     'email': user[1],
                     'role': user[3],
-                    'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+                    'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=2)
                 }
-                print("Payload :", payload)
-                print("Secret Key :", current_app.config['SECRET_KEY'])
                 token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
                 if isinstance(token, bytes):
                     token = token.decode('utf-8')
@@ -117,7 +110,7 @@ def login_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
+# ✅ Route protégée pour obtenir les infos du token
 @users_blueprint.route('/me', methods=['GET'])
 @token_required
 def get_current_user():
