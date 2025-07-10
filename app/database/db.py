@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, text
-from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, SECRET_KEY
 
 def get_db_connection():
     try:

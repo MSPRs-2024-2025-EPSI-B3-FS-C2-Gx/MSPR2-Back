@@ -6,12 +6,16 @@ from routes.tables import tables_blueprint
 from routes.data import data_blueprint
 from routes.worldmap import worldmap_blueprint
 from routes.graph import graph_blueprint
-
+from routes.users import users_blueprint
+from dotenv import load_dotenv
+import os
 from database.db import get_db_connection
 
 app = Flask(__name__)
 CORS(app)
 
+load_dotenv()  # ✅ charge les variables d'environnement
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")  # ✅ assigne à Flask 
 # Vérification de l'état du backend
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -38,6 +42,7 @@ app.register_blueprint(tables_blueprint, url_prefix="/api")
 app.register_blueprint(data_blueprint, url_prefix="/api")
 app.register_blueprint(worldmap_blueprint, url_prefix="/api")
 app.register_blueprint(graph_blueprint, url_prefix="/api")
+app.register_blueprint(users_blueprint, url_prefix="/api")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
