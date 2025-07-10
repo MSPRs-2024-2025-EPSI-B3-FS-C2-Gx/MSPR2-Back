@@ -72,7 +72,6 @@ def login_user():
     data = request.json
     email = data.get('email')
     password = data.get('password')
-
     if not email or not password:
         return jsonify({'error': 'Champs manquants'}), 400
 
@@ -122,3 +121,17 @@ def get_current_user():
         }
     }), 200
 
+@users_blueprint.route('/delete', methods=['DELETE'])
+@token_required
+def delete_user():
+    user_id = request.user['id_user']
+    try:
+        conn = get_db_connection()
+        with conn.begin() as connection:
+            connection.execute(
+                text("DELETE FROM users WHERE id_user = :id_user"),
+                {"id_user": user_id}
+            )
+        return jsonify({'message': 'Compte supprimé avec succès'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
